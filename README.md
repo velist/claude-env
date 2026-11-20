@@ -2,7 +2,7 @@
 
 给 Claude / PayPal 这类境外服务用的 macOS 网络环境体检、复测与断网自救工具。
 
-一个命令行,十二项检查,一条看门狗。默认只读,不会乱改你的网络。
+一个命令行,十三项检查,一条看门狗。默认只读,不会乱改你的网络。
 
 ```
 ✅ 运行模式         rule 规则模式
@@ -11,6 +11,7 @@
 ✅ 国内分流         国内直连出口 203.0.113.7 中国 广西 南宁 电信
 ✅ IPv6 泄露       无全局 IPv6 地址
 ✅ UDP/WebRTC 出口  STUN 映射 198.51.100.23
+✅ 国内 STUN 泄露  国内 STUN 也走代理(198.51.100.23)
 ✅ DNS 接管         fake-ip 实测生效(解析为 198.18.x),系统 DNS 114.114.114.114
 ✅ 兜底规则         MATCH -> 国外流量
 ✅ PayPal 直连      paypalobjects.com,paypal.com
@@ -50,6 +51,7 @@ FuckClaude 做的是在浏览器里扫描“你像不像一个中国用户”:�
 | 国内分流 | 国内出口与境外出口不同 |
 | IPv6 泄露 | 无全局 IPv6 地址 |
 | UDP/WebRTC | STUN 映射地址 == 境外出口 |
+| 国内 STUN | 国内 STUN 服务器看到的出口 == 境外出口 |
 | DNS 接管 | fake-ip 实际生效 |
 | 兜底规则 | `MATCH` 指向代理组而非 DIRECT |
 | PayPal 直连 | 部分节点到 PayPal 的 TLS 握手会被阻断 |
@@ -97,6 +99,7 @@ python3 scripts/claude_env.py guardian install           # 安装每 60s 巡检
 1. **国内站点看到真实 IP 不是泄露。** CN 域名直连是设计目标,泄露只看境外回显、STUN、IPv6。
 2. **系统 DNS 显示 114.114.114.114 不是泄露。** 53 端口被 TUN 劫持,判据是 fake-ip 是否生效。
 3. **延迟低不等于能用。** 有的节点握手就超时,ping 却很好看。要看 TLS 时间和完整下载字节数。
+4. **WebRTC 泄露常常来自国内 STUN 服务器。** 它们命中直连规则,会把真实出口报给检测页,而国外 STUN 一切正常——这就是"有时显示有时不显示"的原因。
 
 更多实战案例见 [references/casebook.md](references/casebook.md),验收标准见 [references/checklist.md](references/checklist.md)。
 

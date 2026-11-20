@@ -26,7 +26,7 @@ python3 scripts/claude_env.py audit      # 只读,不动任何设置
 | 命令 | 用途 |
 |---|---|
 | `doctor [--write-config]` | 识别客户端/控制接口/运行时配置,生成 `~/.config/claude-env/config.json` |
-| `audit` | 12 项体检,输出带修复建议 |
+| `audit` | 13 项体检,输出带修复建议 |
 | `retest` | 复测并与上次快照逐项对比 |
 | `services` | 只测 claude/anthropic/paypal/appleid/wechat |
 | `nodes [--group X] [--probe]` | 代理组当前指向 + 节点延迟排名 |
@@ -47,6 +47,7 @@ python3 scripts/claude_env.py audit      # 只读,不动任何设置
 ## 判定口径(最容易搞错的地方)
 
 - **国内站点看到真实 IP 不是泄露。** CN 域名/GeoIP 直连是刻意设计;泄露只看境外回显、STUN 映射、IPv6 这三处是否等于代理出口。
+- **WebRTC 泄露多半来自国内 STUN 服务器。** 它们命中直连规则,会把你家真实 IP 报给检测页;`audit` 会单独测这一项。
 - **系统 DNS 显示 114.114.114.114 不是泄露。** 53 端口被 TUN 劫持,查询实际走 mihomo。判据是 fake-ip 是否生效 + 境外解析出口。
 - **ping 低不等于能用。** 要看 TLS 握手和完整下载:有的节点握手就超时,延迟却很好看。
 - **ASN 是家宽还是机房,决定风控风险,不决定合法性。** HiNet/中华电信这类 ISP 段比小机房更像真人线路,但不保证不被标记。

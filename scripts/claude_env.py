@@ -362,6 +362,7 @@ def collect(quick=False):
             "foreign": pool.submit(foreign_egress),
             "cn": pool.submit(cn_egress),
             "stun": pool.submit(stun_mapped),
+            "stun_cn": pool.submit(stun_mapped, "stun.chat.bilibili.com", 3478),
         }
         for key, future in futures.items():
             try:
@@ -468,6 +469,16 @@ def evaluate(data):
                 "UDP 没走代理,浏览器 WebRTC 会暴露真实 IP")
     else:
         add("stun", "UDP/WebRTC 出口", "SKIP", "STUN 探测无响应")
+
+    stun_cn = data.get("stun_cn")
+    if stun_cn and foreign.get("ip") and stun_cn != foreign["ip"]:
+        add("stun_cn", "国内 STUN 泄露", "FAIL",
+            f"国内 STUN 服务器看到的出口是 {stun_cn}",
+            "加前置规则 DOMAIN-KEYWORD,stun,代理组;国内 STUN 命中直连规则时会暴露真实 IP")
+    elif stun_cn:
+        add("stun_cn", "国内 STUN 泄露", "PASS", f"国内 STUN 也走代理({stun_cn})")
+    else:
+        add("stun_cn", "国内 STUN 泄露", "SKIP", "国内 STUN 探测无响应")
 
     dns = data["dns"]
     system = ",".join(data["system_dns"]) or "自动"
@@ -589,6 +600,7 @@ def cmd_audit(args):
                             "country": (data.get("profile") or {}).get("country"),
                             "org": (data.get("profile") or {}).get("org"),
                             "ipv6": bool(data["ipv6"]), "stun": data.get("stun"),
+                            "stun_cn": data.get("stun_cn"),
                             "mode": data["mode"], "tun": data["tun"]}}
     save("last.json", snapshot)
     save(time.strftime("audit-%Y%m%d-%H%M%S.json"), snapshot)
@@ -620,6 +632,7 @@ def cmd_retest(args):
                             "country": (data.get("profile") or {}).get("country"),
                             "org": (data.get("profile") or {}).get("org"),
                             "ipv6": bool(data["ipv6"]), "stun": data.get("stun"),
+                            "stun_cn": data.get("stun_cn"),
                             "mode": data["mode"], "tun": data["tun"]}}
     changes = diff(old, snapshot)
     save("last.json", snapshot)

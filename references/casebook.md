@@ -50,6 +50,28 @@ for i in 1 2 3; do curl -sS -m 20 -o /dev/null -w "%{http_code} %{time_total} %{
 
 本工具的 `audit` 会同时给出境外出口、CN 出口、IPv6 和 STUN 映射四项,直接对照即可,不要凭单个网页下结论。
 
+### WebRTC 检测页显示国内真实 IP
+
+**症状**:泄露检测页一边写"未发现真实 IP 泄露",一边在 WebRTC 区域列出你的电信/联通 IP。
+
+**原因**:WebRTC 会同时向多个 STUN 服务器发 UDP 探测包,谁先回就用谁。国内 STUN(如 `stun.chat.bilibili.com`、`stun.hitv.com`、`stun.miwifi.com`)命中 `cn-domain` / `GeoIP,CN` 后走 DIRECT,对端看到的自然是你家的真实出口。所以"有时显示有时不显示",取决于检测站用了哪家 STUN。
+
+**验证**:
+```sh
+# 国外 STUN 正常 → 节点 IP
+# 国内 STUN 泄露 → 真实 IP
+```
+`audit` 的「国内 STUN 泄露」一项就是干这个的。
+
+**处置**:在前置规则最上面加
+```
+DOMAIN-KEYWORD,stun,<代理组名>
+DOMAIN-SUFFIX,stunprotocol.org,<代理组名>
+```
+代价:STUN 走代理后,浏览器视频通话会多一跳延迟;微信/腾讯会议若出现卡顿,把对应域名单独放回直连。
+
+注意 `DOMAIN-KEYWORD,stun` 会顺带匹配 `student.*` 这类含 "stun" 的域名,介意的话换成 `DOMAIN-REGEX,^stun[0-9]*\.`。
+
 ## 系统 DNS 显示 114.114.114.114
 
 不是泄露。TUN 的 `dns-hijack: any:53` 会把所有 53 端口查询接管到 mihomo,`dig` 也拿不到真实上游。判据只有两个:`enhanced-mode` 是否为 fake-ip、境外域名是否返回 `198.18.x.x`。
